@@ -1,5 +1,6 @@
 # SIGNAL app
 # edits February, 2021
+# edits Aug 2023, LB
 #
 # This is a Shiny web application. You can run the application by clicking
 # the 'Run App' button above.

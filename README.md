@@ -1,6 +1,7 @@
 # SIGNAL
 (**S**election by **I**terative pathway **G**roup and **N**etwork **A**nalysis **L**ooping)
 
+THIS IS A TEMPORARY ADDITION, PLEASE REMOVE LATER
 
 The Selection by Iterartive pathway Group and Network Analysis Looping (SIGNAL) platform is designed to facilitate robust hit selection from high-throughput studies. 
 
