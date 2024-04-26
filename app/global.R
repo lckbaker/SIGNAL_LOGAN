@@ -1,5 +1,5 @@
 # SIGNAL app
-# edits Oct, 2023
+# edits February, 2021
 #
 # This is a Shiny web application. You can run the application by clicking
 # the 'Run App' button above.
@@ -170,4 +170,3 @@ mouseGenes <- read.table(file=paste0(dataDir, "Mouse_genes_with_protein_product_
 
 #Converts entrezid to symbol name
 #select(org.Hs.eg.db, keys = '1234', columns = c('ENTREZID', 'SYMBOL'), keytype = 'ENTREZID')
-

@@ -580,11 +580,23 @@ server <- function(session, input, output) {
       
     } else if(grepl("GO:", pathway.type )) {
       path.set <- 'GO'
+      #TODO - load the premade list R object of all go pathways with their entrez ids stored within
+      
+      
       #TODO for this section, add a part to loading screen to display the extra time it takes to load the db
       #Has to load both the database of pathways and genes, as well as subsets of paths
       if(organism == 'Human') {
         
-        pathwayData <- as.list(org.Hs.egGO2ALLEGS) 
+        #############All work will be on BP Human for now #################
+        
+        print('Begin new import')
+        #print(getwd())
+        filename <- paste0(dataDir, "Pathways/GO_Lists/Human_GO_ALL.RDS")
+        pathwayData <- readRDS(filename)
+        
+        print('Completed new import')
+        print(head(pathwayData))
+        #pathwayData <- as.list(org.Hs.egGO2ALLEGS) 
         #Function that converts entrez ids to the lookup symbol
         Entrez2Sym <- function(x) {
           humanGenes[humanGenes$EntrezID %in% x,'GeneSymbol']
@@ -608,6 +620,13 @@ server <- function(session, input, output) {
       }
       
       if (pathway.type == 'GO: Biological Processes'){
+        
+        ##########################
+        #Only making this work for now
+        #Once BP works for GO, expand
+        ##########################
+        
+        
         pathway.type <- 'BP'
         #"GO:0008150"
         GO_Subset = as.list(GOBPOFFSPRING)
@@ -810,6 +829,7 @@ server <- function(session, input, output) {
      
       print('Pathway End')
       #TODO figure out why its formatting like this ugh
+      #High priority - fix the output
       
       #print(head(siRNA.Score))
       
@@ -832,6 +852,9 @@ server <- function(session, input, output) {
       
       source(paste0(scriptDir, "Network_iteration_V3.R"), local = TRUE)
       print('problem here?')
+      
+      #This problem was due to the weird direction of the p-values, meaning there was no starting set of genes
+      #TODO add a check that the starting set of genes is at least 10(?) - before running the program
       
       siRNA.Score <- data.frame(siRNA.Score, temp1 = "No", temp2 = siRNA.Score[[kName1]], stringsAsFactors = FALSE)
       nName1 <- paste0("Network.", iteration)
@@ -873,6 +896,9 @@ server <- function(session, input, output) {
     #For GO reruns under enrichGO for visuals
     if(grepl("GO", path.set ) ) {
       #TODO - make this flexible to speciies and ont
+      #This should be something we are consistent with
+      print('Enrichobjcreation Alpha')
+      
       enrichGOOBJ <- clusterProfiler::enrichGO(gene = hit.Genes,
                                 OrgDb = 'org.Hs.eg.db',
                                 ont = 'BP', 
@@ -882,6 +908,7 @@ server <- function(session, input, output) {
       
       pathEnrich2 <- as.data.frame(enrichGOOBJ)
       
+      print('Enrichobjcreation Beta')
       
       pathEnrich2 <- pathEnrich2 %>%
         dplyr::rename(
@@ -890,7 +917,7 @@ server <- function(session, input, output) {
           HitGeneNames = geneID
         ) %>%
         rowwise() %>%
-        mutate(
+        dplyr::mutate(
           pVal = round(pvalue, digits = 3), 
           pValFDR = round(qvalue, digits = 3), 
           pValBonferroni = round(p.adjust, digits = 3), 
@@ -900,22 +927,33 @@ server <- function(session, input, output) {
         ungroup() %>%
         filter(HitGenes > 0) %>%
         dplyr::select(ID, Pathway, pVal, pValFDR, pValBonferroni, Genes, HitGenes, HitGeneNames)
- 
-    print(head(pathEnrich))
-    print(head(pathEnrich2))
-    
-    
-    
-    pathEnrich <- pathEnrich %>%
-      dplyr::select(-c(pValFDR, pValBonferroni)) %>%
-      dplyr::rename(ID = Pathway) %>%
-      dplyr::full_join(pathEnrich2[,c('ID', 'Pathway', "pValFDR", "pValBonferroni")], by = 'ID') %>%
-      dplyr::select(ID, Pathway, pVal, pValFDR, pValBonferroni, Genes, HitGenes, HitGeneNames)
-    
-    print('Merge?')
-    print(head(pathEnrich))
-    
-    #pathEnrich <- pathEnrich2
+      
+      print('Enrichobjcreation Gamma')
+        
+      #Do this to ensure identical  
+      print(head(pathEnrich))
+      print(head(pathEnrich2))
+      
+      pathEnrich3 <- pathEnrich %>%
+        dplyr::select(-c(pValFDR, pValBonferroni)) %>%
+        dplyr::rename(ID = Pathway) %>%
+        dplyr::full_join(pathEnrich2[,c('ID', 'Pathway', "pValFDR", "pValBonferroni")], by = 'ID') %>%
+        dplyr::select(ID, Pathway, pVal, pValFDR, pValBonferroni, Genes, HitGenes, HitGeneNames)
+      
+      print('Enrichobjcreation Delta')
+      
+      print('Merge?')
+      print(head(pathEnrich))
+      print(class(pathEnrich))
+      writexl::write_xlsx(list('Combined' = pathEnrich3, 'Loop' = pathEnrich, 'enrichGO' = pathEnrich2),
+                          'LoganLookatthis.xlsx')
+      
+      #### CURRENTLY WE ARE RETURNING THE ENRICHGO OBJECT GENERATED BY OUR LOOP (pathEnrich2)
+      #THEORETICALLY, THIS SHOULD BE FINE
+      #IF ANY PATHWAY MISMATCH - WILL BE ODD
+      pathEnrich <- pathEnrich2 %>%
+        dplyr::select(Pathway, pVal, pValFDR, pValBonferroni, Genes, HitGenes, HitGeneNames)
+      
     }
     
     pathEnrich <- pathEnrich[pathEnrich$pVal < pval_threshold, ]
@@ -923,7 +961,7 @@ server <- function(session, input, output) {
     tempL <- strsplit(pathEnrich$HitGeneNames, split = ", ")
     names(tempL) <- pathEnrich$Pathway
     
-    print('pointE')
+    print('Enrichobjcreation Epsiloon')
     
     #print(head(pathEnrich))
     #print(tempL)
